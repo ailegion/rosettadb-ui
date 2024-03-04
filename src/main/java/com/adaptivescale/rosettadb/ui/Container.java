@@ -1,27 +1,20 @@
 package com.adaptivescale.rosettadb.ui;
 
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.Scroller;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.component.splitlayout.SplitLayout;
 
-//@PageTitle("Main")
-//@Route(value = "/dashboard")
+
 public class Container extends HorizontalLayout {
   Container(){
     setHeightFull();
+    // Init menus for Manager
+    new LeftMenu();
+    new RightMenu();
     HorizontalLayout mainContainer = new HorizontalLayout();
-    mainContainer.add(new LeftMenu());
-    HorizontalLayout mainContentHolder = new HorizontalLayout();
-    mainContainer.setWidthFull();
-    mainContainer.setHeightFull();
-    Scroller scroller = new Scroller();
-    scroller.setContent(mainContentHolder);
-    mainContainer.add(scroller); // TODo store as variable (main container)
-    scroller.setScrollDirection(Scroller.ScrollDirection.VERTICAL);
-    scroller.setWidthFull();
-    mainContainer.add(new RightMenu());
+    HorizontalLayout detailContainer = new HorizontalLayout();
+    SplitLayout leftSplit = new SplitLayout(Manager.getInstance().getSourcesMenu(), detailContainer);
+
+    mainContainer.add(leftSplit);
     add(mainContainer);
-//    addToNavbar(mainContainer);
   }
 }

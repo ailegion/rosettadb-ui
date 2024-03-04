@@ -14,6 +14,8 @@ public class AddSourceDialog extends Dialog {
   private TextField url =new TextField("Url");
   private TextField username = new TextField("Username");
   private PasswordField password = new PasswordField("Password");
+
+
   AddSourceDialog() {
     Manager.getInstance().setAddSourceDialog(this);
     Manager.getInstance().getAddSourceDialog().setWidth(300, Unit.PIXELS);
@@ -33,7 +35,7 @@ public class AddSourceDialog extends Dialog {
       Source newSource = new Source();
       newSource.setName(name.getValue());
       newSource.setUrl(url.getValue());
-      newSource.setUsername(username.getValue());
+      newSource.setUserName(username.getValue());
       newSource.setPassword(password.getValue());
       Manager.getInstance().getSources().add(newSource);
       Manager.getInstance().getSourcesMenu().setItems(Manager.getInstance().getSources());
@@ -64,4 +66,5 @@ public class AddSourceDialog extends Dialog {
   public void setPassword(PasswordField password) {
     this.password = password;
   }
+
 }

@@ -1,40 +1,37 @@
 package com.adaptivescale.rosettadb.ui;
 
-public class Source {
-  private String name;
-  private String url;
-  private String username;
-  private String password;
+import com.adaptivescale.rosetta.common.models.Database;
+import com.adaptivescale.rosetta.common.models.input.Connection;
 
-  public String getName() {
-    return name;
+public class Source extends Connection {
+
+  private Boolean isExpanded = false;
+
+  private Boolean isSelected = false;
+
+  private Database database = null;
+
+  public Boolean getExpanded() {
+    return isExpanded;
   }
 
-  public void setName(String name) {
-    this.name = name;
+  public void setExpanded(Boolean expanded) {
+    isExpanded = expanded;
   }
 
-  public String getUrl() {
-    return url;
+  public Boolean getSelected() {
+    return isSelected;
   }
 
-  public void setUrl(String url) {
-    this.url = url;
+  public void setSelected(Boolean selected) {
+    isSelected = selected;
   }
 
-  public String getUsername() {
-    return username;
+  public Database getDatabase() {
+    return database;
   }
 
-  public void setUsername(String username) {
-    this.username = username;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(String password) {
-    this.password = password;
+  public void setDatabase(Database database) {
+    this.database = database;
   }
 }
