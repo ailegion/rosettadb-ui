@@ -1,5 +1,6 @@
 package com.adaptivescale.rosettadb.ui;
 
+import com.adaptivescale.rosetta.common.types.DriverClassName;
 import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -83,10 +84,17 @@ public class Header extends HorizontalLayout {
     // TODO refactor this part
     try {
       if(!Files.isDirectory(Path.of("drivers"))){
+        Logger.getAnonymousLogger().log(Level.INFO, String.format("Creating directory:%s", Path.of("drivers")));
         Files.createDirectory(Path.of("drivers"));
       }
+
+      Logger.getAnonymousLogger().log(Level.INFO, String.format("Storing driver:%s", path));
       Files.write(path, buffer.getInputStream().readAllBytes());
-      Manager.getInstance().loadJdbcDrivers();
+      Driver driver = new Driver();
+      driver.setDriverPath(path.toString());
+      driver.setDriverClassName(DriverClassName.POSTGRES); // TODO fix
+      Manager.getInstance().addDriver(driver);
+
       Notification notification = Notification.show("Driver uploaded", 5000, Notification.Position.BOTTOM_END);
       notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     } catch (IOException e) {

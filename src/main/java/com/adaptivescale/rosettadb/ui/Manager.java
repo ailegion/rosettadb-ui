@@ -1,20 +1,30 @@
 package com.adaptivescale.rosettadb.ui;
 
+import com.adaptivescale.rosetta.common.JDBCDriverProvider;
 import com.adaptivescale.rosetta.common.types.DriverClassName;
 import com.vaadin.flow.component.dialog.Dialog;
 
 import java.io.File;
-import java.io.FilenameFilter;
+import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.sql.Driver;
+import java.nio.file.Path;
+import java.sql.Connection;
 import java.sql.DriverManager;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Manager {
   private static Manager instance = null;
+
+  private Set<Driver> driversSet = new HashSet<>();
+
+  private Object activePage = null;
+
+  private ActiveObjectContainer activeObjectContainer = null;
 
   private Dialog addSourceDialog = null;
 
@@ -35,11 +45,13 @@ public class Manager {
       instance = new Manager();
       // TODO remove - dev help only
       Source tempSource = new Source();
-      tempSource.setUrl("jdbc:postgresql://localhost:5432/postgres");
+      tempSource.setUrl("jdbc:postgresql://localhost:5432/career_zen");
+//      tempSource.setUrl("jdbc:postgresql:postgres");
       tempSource.setUserName("postgres");
       tempSource.setPassword("123456");
-      tempSource.setName("postgres");
+      tempSource.setName("career_zen");
       tempSource.setDbType("POSTGRES");
+      tempSource.setSchemaName("career_zen");
       instance.addSource(tempSource);
     }
     return instance;
@@ -101,48 +113,85 @@ public class Manager {
     getSource(sourceUniqueId).setSelected(true);
   }
 
-//  public void reloadDrivers() {
-//    loadDriverFor(DriverClassName.MYSQL);
-//    loadDriverFor(DriverClassName.POSTGRES);
-//    loadDriverFor(DriverClassName.KINETICA);
-//  }
+  public static Connection getConnection(File jarFile, DriverClassName driverClassName, String url) throws MalformedURLException, ClassNotFoundException, InstantiationException, IllegalAccessException, SQLException, SQLException {
+    URL jarUrl = jarFile.toURI().toURL();
+    URLClassLoader loader = new URLClassLoader(new URL[]{jarUrl}, ClassLoader.getSystemClassLoader());
+    Class clazz = Class.forName(driverClassName.getValue(), true, loader);
+    Properties prop = new Properties();
+    prop.put("user", "admin");
+    prop.put("password", "1234");
+    Connection conn = (Connection) DriverManager.getConnection(url, prop);
+    return conn;
+  }
 
-  void  loadJdbcDrivers() {
-    try {
-      // Create a File object pointing to your drivers directory
-      File driversDir = new File("drivers");
-      // Filter to only .jar files
-      File[] driverFiles = driversDir.listFiles(new FilenameFilter() {
-        public boolean accept(File dir, String name) {
-          return name.toLowerCase().endsWith(".jar");
-        }
-      });
+  public void addDriver(Driver driver) {
+    Manager.getInstance().driversSet.add(driver);
+  }
 
-      if (driverFiles != null && driverFiles.length > 0) {
-        URL[] urls = new URL[driverFiles.length];
-        for (int i = 0; i < driverFiles.length; i++) {
-          // Convert the file path to a URL
-          urls[i] = driverFiles[i].toURI().toURL();
-        }
-        // Create a new URLClassLoader with the directory
-        URLClassLoader loader = new URLClassLoader(urls);
-        // Load and register each driver class with the DriverManager
-        for (URL url : urls) {
-          for (DriverClassName driverClassName : DriverClassName.values()) {
-            // Load the driver class
-            try {
-              Class<?> driverClass = Class.forName(driverClassName.getValue(), true, loader);
-              // Register the driver with the DriverManager
-              DriverManager.registerDriver((Driver) driverClass.newInstance());
-            } catch (Exception e) {
-
-            }
-          }
-        }
+  public Driver getDriver(DriverClassName driverClassName) {
+    for (Driver driver : driversSet) {
+      if(driver.getDriverClassName().equals(driverClassName)){
+        return driver;
       }
-    } catch (Exception e) {
-      e.printStackTrace();
     }
+    return null;
+  }
+
+  public void loadDriver(DriverClassName driverClassName) {
+    Driver driverToLoad = Manager.getInstance().getDriver(driverClassName);
+    Path path = Path.of(driverToLoad.getDriverPath());
+    Logger.getAnonymousLogger().log(Level.INFO, String.format("Loading driver:%s", path));
+    try {
+      URLClassLoader loader = new URLClassLoader(new URL[]{path.toUri().toURL()}, ClassLoader.getSystemClassLoader());
+      Class<?> driverClass = null;
+      driverClass = Class.forName(DriverClassName.POSTGRES.getValue(), true, loader);
+      java.sql.Driver driver = (java.sql.Driver) driverClass.getDeclaredConstructor().newInstance();
+      Logger.getAnonymousLogger().log(Level.INFO, String.format("Registering driver:%s with driver manager", path));
+      DriverManager.registerDriver(driver);
+    } catch (ClassNotFoundException | SQLException | InvocationTargetException | InstantiationException |
+             IllegalAccessException | NoSuchMethodException | MalformedURLException e) {
+      throw new RuntimeException(e);
+    }
+
+  }
+
+  private JDBCDriverProvider jdbcDriverProvider = new JDBCDriverProvider() {
+    @Override
+    public java.sql.Driver getDriver(com.adaptivescale.rosetta.common.models.input.Connection connection) throws SQLException {
+      try {
+        Driver driverToLoad = Manager.getInstance().getDriver(DriverClassName.valueOf(connection.getDbType()));
+        Path path = Path.of(driverToLoad.getDriverPath());
+        Logger.getAnonymousLogger().log(Level.INFO, String.format("Loading driver:%s", path));
+        URLClassLoader loader = new URLClassLoader(new URL[]{path.toUri().toURL()}, ClassLoader.getSystemClassLoader());
+        Class<?> driverClass = null;
+        driverClass = Class.forName(DriverClassName.POSTGRES.getValue(), true, loader);
+        java.sql.Driver driver = (java.sql.Driver) driverClass.getDeclaredConstructor().newInstance();
+        return driver;
+      } catch (MalformedURLException | ClassNotFoundException | InvocationTargetException | InstantiationException |
+               IllegalAccessException | NoSuchMethodException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  };
+
+  public JDBCDriverProvider getJdbcDriverProvider() {
+    return jdbcDriverProvider;
+  }
+
+  public Object getActivePage() {
+    return activePage;
+  }
+
+  public void setActivePage(Object activePage) {
+    this.activePage = activePage;
+  }
+
+  public ActiveObjectContainer getActiveObjectContainer() {
+    return activeObjectContainer;
+  }
+
+  public void setActiveObjectContainer(ActiveObjectContainer activeObjectContainer) {
+    this.activeObjectContainer = activeObjectContainer;
   }
 
 }

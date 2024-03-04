@@ -10,10 +10,13 @@ public class Container extends HorizontalLayout {
     // Init menus for Manager
     new LeftMenu();
     new RightMenu();
+    new ActiveObjectContainer();
     HorizontalLayout mainContainer = new HorizontalLayout();
-    HorizontalLayout detailContainer = new HorizontalLayout();
-    SplitLayout leftSplit = new SplitLayout(Manager.getInstance().getSourcesMenu(), detailContainer);
-
+    mainContainer.setWidthFull();
+    mainContainer.setHeightFull();
+    SplitLayout leftSplit = new SplitLayout(Manager.getInstance().getSourcesMenu(), Manager.getInstance().getActiveObjectContainer());
+    leftSplit.setWidthFull();
+    leftSplit.setHeightFull();
     mainContainer.add(leftSplit);
     add(mainContainer);
   }
